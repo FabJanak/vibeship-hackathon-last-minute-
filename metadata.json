@@ -1,0 +1,6 @@
+{
+  "name": "Last-Minute Life Saver",
+  "description": "A proactive productivity app that helps you finish tasks before deadlines are missed. Features Google Sign-In, AI priority ranking, daily schedule generation, Google Calendar conflict detection, an overloaded re-plan button, and beautiful statistics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
