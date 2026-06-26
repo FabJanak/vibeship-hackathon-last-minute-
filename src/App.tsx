@@ -106,14 +106,14 @@ export default function App() {
           setLoadingCalendar(false);
           return;
         }
-        tokenToUse = freshToken;
+        // This will update the state and trigger the useEffect to fetch the actual calendar events
         setAccessToken(freshToken);
       } catch (err: any) {
         console.error('Error connecting calendar:', err);
         setError('Calendar authorization is blocked or was declined. Note: Google restricts custom calendar APIs to the project developer during sandbox testing. Standard features and Guest Mode remain 100% active!');
         setLoadingCalendar(false);
-        return;
       }
+      return;
     }
 
     setLoadingCalendar(true);
@@ -134,7 +134,12 @@ export default function App() {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch today\'s calendar events.');
+        let errDetails = '';
+        try {
+           const errJson = await response.json();
+           errDetails = errJson.details;
+        } catch(e) {}
+        throw new Error(`Failed to fetch today's calendar events. Details: ${errDetails}`);
       }
 
       const data = await response.json();
@@ -143,7 +148,7 @@ export default function App() {
       setTimeout(() => setSyncMessage(null), 4000);
     } catch (err: any) {
       console.error(err);
-      setError('Calendar Sync failed. You can still use Last-Minute Life Saver to manage and auto-schedule tasks!');
+      setError(err.message || 'Calendar Sync failed.');
     } finally {
       setLoadingCalendar(false);
     }
@@ -164,9 +169,10 @@ export default function App() {
       const result = await googleSignIn();
       if (result) {
         setCurrentUser(result.user);
-        setAccessToken(result.accessToken);
+        // Do not set standard access token here, as it does not have Google Calendar permissions.
+        // The user will click "Connect Google Calendar" to grant calendar permissions and fetch events.
+        setAccessToken(null);
         setNeedsAuth(false);
-        // Calendar fetch will trigger automatically from useEffect
       }
     } catch (err: any) {
       console.error(err);
@@ -667,12 +673,21 @@ export default function App() {
         )}
 
         {error && (
-          <div className="p-3.5 bg-rose-50 border border-rose-100 text-rose-800 text-xs rounded-xl flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-rose-900 block mb-0.5">Oops, Something went wrong:</span>
-              <p className="opacity-95">{error}</p>
+          <div className="p-3.5 bg-rose-50 border border-rose-100 text-rose-800 text-xs rounded-xl flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-rose-900 block mb-0.5">Oops, Something went wrong:</span>
+                <p className="opacity-95">{error}</p>
+              </div>
             </div>
+            <button 
+              onClick={() => setError(null)}
+              className="text-rose-400 hover:text-rose-600 font-bold px-2 py-0.5 rounded transition-colors cursor-pointer text-sm"
+              title="Dismiss Alert"
+            >
+              ✕
+            </button>
           </div>
         )}
 

@@ -89,6 +89,9 @@ export const connectCalendar = async (): Promise<string | null> => {
   const calendarProvider = new GoogleAuthProvider();
   calendarProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
   calendarProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+  calendarProvider.setCustomParameters({
+    prompt: 'consent'
+  });
 
   try {
     const result = await signInWithPopup(auth, calendarProvider);
@@ -160,8 +163,7 @@ export const subscribeToTasks = (
   const colRef = collection(db, TASKS_COLLECTION);
   const q = query(
     colRef,
-    where('userId', '==', userId),
-    orderBy('deadline', 'asc')
+    where('userId', '==', userId)
   );
 
   return onSnapshot(
@@ -171,6 +173,14 @@ export const subscribeToTasks = (
       snapshot.forEach((doc) => {
         tasks.push({ id: doc.id, ...doc.data() } as Task);
       });
+      
+      // Sort tasks by deadline ascending on client side to avoid Firestore composite index requirement
+      tasks.sort((a, b) => {
+        const dateA = a.deadline ? new Date(a.deadline).getTime() : 0;
+        const dateB = b.deadline ? new Date(b.deadline).getTime() : 0;
+        return dateA - dateB;
+      });
+
       onUpdate(tasks);
     },
     (error) => {
